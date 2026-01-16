@@ -21,4 +21,4 @@ jobs:
 
       - name: Build backend Docker image
         run: |
-          docker build -t pythonbuddy-backend ./backend
+          docker build -t pythonbuddy-backend -f backend/Dockerfile .
