@@ -296,7 +296,6 @@ def remove_temp_code_file():
         try:
             if os.path.exists(session['file_name']):
                 os.remove(session['file_name'])
-            session['file_name'] = None
         except Exception:
             pass
 
