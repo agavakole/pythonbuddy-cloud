@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt .
+COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Create non-root user
@@ -22,5 +22,6 @@ COPY --chown=appuser:appuser . .
 EXPOSE 5000
 
 # Use gunicorn for production
-CMD ["python", "app.py"]
+CMD ["python", "-m", "PythonBuddy.app"]
+
 
