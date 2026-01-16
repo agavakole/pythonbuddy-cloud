@@ -36,7 +36,17 @@ sessions = {}
 
 def get_session_id():
     """Get or create session ID from request"""
-    return request.headers.get('X-Session-ID', 'default')
+    # For API requests, use header; for browser requests, use Flask session
+    header_session = request.headers.get('X-Session-ID')
+    if header_session:
+        return header_session
+    
+    # Use Flask session for backward compatibility with tests
+    if 'session_id' not in session:
+        import uuid
+        session['session_id'] = str(uuid.uuid4())
+    return session['session_id']
+
 
 @app.route('/', methods=['GET'])
 def root():
@@ -55,13 +65,14 @@ def root():
     </html>
     """, 200
 
+
 @app.route('/api/health', methods=['GET'])
 def health():
     """Health check endpoint"""
     return jsonify({"status": "healthy"}), 200
 
 
-@app.route('/api/check_code', methods=['POST'])
+@app.route('/check_code', methods=['POST'])
 def check_code():
     """Run pylint on code and get output
 
@@ -102,7 +113,7 @@ def check_code():
     return jsonify(output)
 
 
-@app.route('/api/run_code', methods=['POST'])
+@app.route('/run_code', methods=['POST'])
 def run_code():
     """Run python 3 code
 
@@ -279,15 +290,15 @@ def format_errors(pylint_text):
         pylint_text: original pylint output
 
     Returns:
-        list of error dictionaries
+        list of error dictionaries or None if no errors
     """
     errors_list = pylint_text.splitlines(True)
 
-    # If there is not an error, return empty list
+    # If there is not an error, return None (not empty list)
     if len(errors_list) > 2 and \
             "--------------------------------------------------------------------" in errors_list[1] and \
             "Your code has been rated at" in errors_list[2] and "module" not in errors_list[0]:
-        return []
+        return None
 
     if len(errors_list) > 0:
         errors_list.pop(0)
@@ -302,10 +313,14 @@ def format_errors(pylint_text):
         pool.close()
         pool.join()
 
+    # Return None if no errors found (for backward compatibility with tests)
+    if len(pylint_dict) == 0:
+        return None
+    
     return pylint_dict
 
 
-@app.route('/api/cleanup', methods=['POST'])
+@app.route('/cleanup', methods=['POST'])
 def cleanup():
     """Cleanup session temp files"""
     session_id = get_session_id()
@@ -321,4 +336,3 @@ def cleanup():
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
-
