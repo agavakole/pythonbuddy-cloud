@@ -2,13 +2,13 @@ name: Backend CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - "backend/**"
       - "tests/**"
       - ".github/workflows/backend-ci.yml"
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - "backend/**"
       - "tests/**"
@@ -36,4 +36,4 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run tests
-        run: pytest -q
+  run: pytest ../tests -q
