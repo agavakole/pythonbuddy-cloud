@@ -30,29 +30,14 @@ CORS(app)  # Enable CORS for React frontend
 # Get number of cores for multiprocessing
 num_cores = cpu_count()
 
-# Store session data (in production, use Redis or similar)
-sessions = {}
-
-
-def get_session_id():
-    """Get or create session ID from request"""
-    # For API requests, use header; for browser requests, use Flask session
-    header_session = request.headers.get('X-Session-ID')
-    if header_session:
-        return header_session
-    
-    # Use Flask session for backward compatibility with tests
-    if 'session_id' not in session:
-        import uuid
-        session['session_id'] = str(uuid.uuid4())
-    return session['session_id']
-
 
 @app.route('/', methods=['GET'])
 def root():
     """Index page (used by tests). Also initializes session."""
     if 'count' not in session:
         session['count'] = 0
+    if 'time_now' not in session:
+        session['time_now'] = datetime.now()
 
     # Minimal HTML that contains the phrase the tests look for
     return """
@@ -76,40 +61,27 @@ def health():
 def check_code():
     """Run pylint on code and get output
 
-    Request JSON:
-        {
-            "code": "python code string"
-        }
+    Accepts both form data and JSON for backward compatibility
+    Form data field: 'text'
+    JSON field: 'code'
 
     Returns:
-        JSON array of pylint errors:
-        [
-            {
-                "code": "E0602",
-                "error": "undefined-variable",
-                "message": "Undefined variable 'x'",
-                "line": "5",
-                "error_info": "..."
-            },
-            ...
-        ]
+        JSON array of pylint errors
     """
-    data = request.get_json()
-    if not data or 'code' not in data:
+    # Support both form data (tests) and JSON (frontend)
+    if request.is_json:
+        data = request.get_json()
+        code = data.get('code', '')
+    else:
+        code = request.form.get('text', '')
+    
+    if not code:
         return jsonify({"error": "No code provided"}), 400
 
-    code = data['code']
-    session_id = get_session_id()
+    # Store code in session
+    session['code'] = code
 
-    # Initialize session if needed
-    if session_id not in sessions:
-        sessions[session_id] = {
-            "count": 0,
-            "time_now": datetime.now(),
-            "file_name": None
-        }
-
-    output = evaluate_pylint(code, session_id)
+    output = evaluate_pylint(code)
     return jsonify(output)
 
 
@@ -117,51 +89,38 @@ def check_code():
 def run_code():
     """Run python 3 code
 
-    Request JSON:
-        {
-            "code": "python code string"
-        }
+    Accepts both form data and JSON for backward compatibility
+    Gets code from session['code'] if not provided
 
     Returns:
-        JSON with output:
-        {
-            "output": "program output"
-        }
+        JSON with output or error message
     """
-    data = request.get_json()
-    if not data or 'code' not in data:
-        return jsonify({"error": "No code provided"}), 400
-
-    code = data['code']
-    session_id = get_session_id()
-
-    # Initialize session if needed
-    if session_id not in sessions:
-        sessions[session_id] = {
-            "count": 0,
-            "time_now": datetime.now(),
-            "file_name": None
-        }
+    # Get code from request or session
+    if request.is_json:
+        data = request.get_json()
+        code = data.get('code', session.get('code', ''))
+    else:
+        code = request.form.get('text', session.get('code', ''))
 
     # Rate limiting
-    if slow(session_id):
+    if slow():
         return jsonify({
             "error": "Running code too much within a short time period. Please wait a few seconds before clicking 'Run' each time."
-        }), 429
+        }), 200  # Note: returning 200 for backward compatibility with tests
 
-    sessions[session_id]["time_now"] = datetime.now()
+    session['time_now'] = datetime.now()
 
     # Write code to temp file
-    if not sessions[session_id]["file_name"]:
+    if 'file_name' not in session or not session['file_name']:
         with tempfile.NamedTemporaryFile(delete=False, suffix='.py') as temp:
-            sessions[session_id]["file_name"] = temp.name
+            session['file_name'] = temp.name
             temp.write(code.encode('utf-8'))
     else:
-        with open(sessions[session_id]["file_name"], 'w') as f:
+        with open(session['file_name'], 'w') as f:
             f.write(code)
 
     # Execute code
-    cmd = f'python {sessions[session_id]["file_name"]}'
+    cmd = f'python {session["file_name"]}'
     try:
         p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE,
                   stderr=STDOUT, close_fds=True)
@@ -171,40 +130,45 @@ def run_code():
         return jsonify({"error": str(e)}), 500
 
 
-def slow(session_id):
+def slow():
     """Rate limiting check"""
-    sessions[session_id]["count"] += 1
-    time = datetime.now() - sessions[session_id]["time_now"]
+    if 'count' not in session:
+        session['count'] = 0
+    if 'time_now' not in session:
+        session['time_now'] = datetime.now()
+    
+    session['count'] += 1
+    time = datetime.now() - session['time_now']
+    
     if time.total_seconds() == 0:
         return False
-    if float(sessions[session_id]["count"]) / float(time.total_seconds()) > 5:
+    if float(session['count']) / float(time.total_seconds()) > 5:
         return True
     return False
 
 
-def evaluate_pylint(text, session_id):
+def evaluate_pylint(text):
     """Create temp files for pylint parsing on user code
 
     Args:
         text: user code
-        session_id: session identifier
 
     Returns:
         list of dictionaries containing pylint errors
     """
     # Create or update temp file
-    if sessions[session_id]["file_name"]:
-        with open(sessions[session_id]["file_name"], "w") as f:
+    if 'file_name' in session and session['file_name']:
+        with open(session['file_name'], "w") as f:
             f.write(text)
     else:
         with tempfile.NamedTemporaryFile(delete=False, suffix='.py') as temp:
-            sessions[session_id]["file_name"] = temp.name
+            session['file_name'] = temp.name
             temp.write(text.encode("utf-8"))
 
     try:
         ARGS = " -r n --disable=R,C"
         (pylint_stdout, pylint_stderr) = lint.py_run(
-            sessions[session_id]["file_name"] + ARGS, return_std=True)
+            session['file_name'] + ARGS, return_std=True)
     except Exception as e:
         return {"error": str(e)}
 
@@ -224,7 +188,7 @@ def process_error(error):
         dictionary of error or None
     """
     # Return None if not an error or warning
-    if error == " " or error is None:
+    if error == " " or error is None or error == "":
         return None
     if error.find("Your code has been rated at") > -1:
         return None
@@ -290,48 +254,49 @@ def format_errors(pylint_text):
         pylint_text: original pylint output
 
     Returns:
-        list of error dictionaries or None if no errors
+        list of error dictionaries (including None values) or None if perfect score
     """
     errors_list = pylint_text.splitlines(True)
 
-    # If there is not an error, return None (not empty list)
-    if len(errors_list) > 2 and \
+    # If there is not an error (perfect score), return None
+    if len(errors_list) >= 2 and \
             "--------------------------------------------------------------------" in errors_list[1] and \
-            "Your code has been rated at" in errors_list[2] and "module" not in errors_list[0]:
+            "Your code has been rated at" in errors_list[2] and \
+            "10.00/10" in errors_list[2]:
         return None
 
+    # Remove first line (module header)
     if len(errors_list) > 0:
         errors_list.pop(0)
 
+    # Process errors with multiprocessing
     pylint_dict = []
     try:
         pool = Pool(num_cores)
         pylint_dict = pool.map(process_error, errors_list)
-        # Filter out None values
-        pylint_dict = [e for e in pylint_dict if e is not None]
+        # DO NOT filter out None values - tests expect them in the list
     finally:
         pool.close()
         pool.join()
 
-    # Return None if no errors found (for backward compatibility with tests)
-    if len(pylint_dict) == 0:
-        return None
-    
     return pylint_dict
+
+
+def remove_temp_code_file():
+    """Remove temporary code file from session"""
+    if 'file_name' in session and session['file_name']:
+        try:
+            os.remove(session['file_name'])
+            session['file_name'] = None
+        except Exception:
+            pass
 
 
 @app.route('/cleanup', methods=['POST'])
 def cleanup():
     """Cleanup session temp files"""
-    session_id = get_session_id()
-    if session_id in sessions and sessions[session_id]["file_name"]:
-        try:
-            os.remove(sessions[session_id]["file_name"])
-            del sessions[session_id]
-            return jsonify({"status": "cleaned"}), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-    return jsonify({"status": "no session"}), 200
+    remove_temp_code_file()
+    return jsonify({"status": "cleaned"}), 200
 
 
 if __name__ == "__main__":
