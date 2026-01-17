@@ -2,12 +2,12 @@ name: Frontend CI/CD
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-ci.yml"
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-ci.yml"
@@ -15,9 +15,6 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
 
     steps:
       - name: Checkout
@@ -29,12 +26,15 @@ jobs:
           node-version: "18"
 
       - name: Install pnpm
+        working-directory: frontend
         run: npm install -g pnpm
 
       - name: Install deps
+        working-directory: frontend
         run: pnpm install --frozen-lockfile
 
       - name: Build
+        working-directory: frontend
         run: pnpm run build
 
       - name: Configure AWS credentials
@@ -46,4 +46,4 @@ jobs:
 
       - name: Deploy to S3
         run: |
-          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
+          aws s3 sync frontend/dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
