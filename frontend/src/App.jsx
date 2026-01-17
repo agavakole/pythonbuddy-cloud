@@ -14,7 +14,7 @@ import './App.css';
 
 // Example codes
 const examples = {
-  1: "methods = []\nfor i in range(10):\n    methodds.append(lambda x: x + i)\nprint(methods[0](10))",
+  1: "methods = )",
   2: "for i in range(5):\n    print(i)\n",
   3: "print([x*x for x in range(20) if x % 2 == 0])",
   4: "print(45**123)",
@@ -23,7 +23,8 @@ const examples = {
   7: "# Fibonacci\ndef fib(n):\n    if n <= 1:\n        return n\n    return fib(n-1) + fib(n-2)\n\nfor i in range(10):\n    print(fib(i))\n"
 };
 
-const API_BASE = 'http://MyALB-743698351.us-east-1.elb.amazonaws.com';
+// ✅ Use env var (Vite). Fallback helps local dev.
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
 
 function App() {
   const [code, setCode] = useState("def foo(bar, baz):\n    pass\nfoo(42)\n");
@@ -72,17 +73,21 @@ function App() {
         editorInstance.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkCode = async (codeToCheck) => {
     try {
-      const response = await axios.post(`${API_BASE}/api/check_code`, {
-        code: codeToCheck
-      }, {
-        headers: {
-          'X-Session-ID': sessionId
+      // ✅ Backend routes are /check_code (NOT /api/check_code)
+      const response = await axios.post(
+        `${API_BASE}/check_code`,
+        { code: codeToCheck },
+        {
+          headers: {
+            'X-Session-ID': sessionId
+          }
         }
-      });
+      );
 
       if (response.data && Array.isArray(response.data)) {
         setErrors(response.data);
@@ -99,18 +104,21 @@ function App() {
     setOutput('Running...');
 
     try {
-      const response = await axios.post(`${API_BASE}/api/run_code`, {
-        code: code
-      }, {
-        headers: {
-          'X-Session-ID': sessionId
+      // ✅ Backend routes are /run_code (NOT /api/run_code)
+      const response = await axios.post(
+        `${API_BASE}/run_code`,
+        { code: code },
+        {
+          headers: {
+            'X-Session-ID': sessionId
+          }
         }
-      });
+      );
 
-      if (response.data.error) {
+      if (response.data && response.data.error) {
         setOutput(response.data.error);
       } else {
-        setOutput(response.data.output || 'No output');
+        setOutput((response.data && response.data.output) ? response.data.output : 'No output');
       }
     } catch (error) {
       setOutput(`Error: ${error.response?.data?.error || error.message}`);
@@ -131,11 +139,16 @@ function App() {
   useEffect(() => {
     // Cleanup session on unmount
     return () => {
-      axios.post(`${API_BASE}/api/cleanup`, {}, {
-        headers: {
-          'X-Session-ID': sessionId
+      // ✅ Backend route is /cleanup (NOT /api/cleanup)
+      axios.post(
+        `${API_BASE}/cleanup`,
+        {},
+        {
+          headers: {
+            'X-Session-ID': sessionId
+          }
         }
-      }).catch(err => console.error('Cleanup error:', err));
+      ).catch(err => console.error('Cleanup error:', err));
     };
   }, [sessionId]);
 
@@ -144,10 +157,12 @@ function App() {
       <div className="header">
         <h1>Python Linter Online</h1>
         <p><i>Live Syntax Checking Using Pylint while Running Python</i></p>
+
         <div className="examples">
           <span>Examples: </span>
           {Object.keys(examples).map(id => (
             <React.Fragment key={id}>
+              {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
               <a onClick={() => loadExample(id)}>{id}</a>
               {id !== '7' && ' '}
             </React.Fragment>
@@ -159,6 +174,7 @@ function App() {
         <div ref={editorRef}>
           <textarea ref={textareaRef} defaultValue={code} />
         </div>
+
         <div className="controls">
           <button
             className="run-button"
@@ -198,7 +214,8 @@ function App() {
             <tbody>
               {errors.map((error, index) => {
                 if (!error) return null;
-                const severity = error.code && error.code[0] === 'E' ? 'error' : 'warning';
+                const severity = (error.code && error.code[0] === 'E') ? 'error' : 'warning';
+
                 return (
                   <tr key={index}>
                     <td>{error.line}</td>
@@ -227,4 +244,3 @@ function App() {
 }
 
 export default App;
-
