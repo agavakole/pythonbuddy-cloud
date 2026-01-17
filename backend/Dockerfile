@@ -23,4 +23,7 @@ COPY --chown=appuser:appuser ../pylint_errors/ ./pylint_errors/
 EXPOSE 5000
 
 # Use gunicorn for production
-CMD ["python", "-m", "PythonBuddy.app"]
+# Add to requirements.txt first:
+# gunicorn
+
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "120", "PythonBuddy.app:app"]
