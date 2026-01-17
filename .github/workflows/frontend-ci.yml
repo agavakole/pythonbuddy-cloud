@@ -2,12 +2,12 @@ name: Frontend CI/CD
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-ci.yml"
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-ci.yml"
@@ -15,6 +15,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # Only run deployment on push to main, not on PRs
+    if: github.event_name == 'push'
 
     steps:
       - name: Checkout
