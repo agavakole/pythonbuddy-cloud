@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Copy application code from root context
+# Copy application code from root context (NO ../ needed!)
 COPY --chown=appuser:appuser PythonBuddy/ ./PythonBuddy/
 COPY --chown=appuser:appuser pylint_errors/ ./pylint_errors/
 
