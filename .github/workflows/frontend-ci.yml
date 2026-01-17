@@ -46,12 +46,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Deploy to S3
-        run: |
-          aws s3 sync frontend/dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
-
       - name: Debug secret
         run: |
           echo "Bucket name length: ${#S3_BUCKET_NAME}"
+          if [ -z "$S3_BUCKET_NAME" ]; then
+            echo "ERROR: S3_BUCKET_NAME is empty!"
+          else
+            echo "S3_BUCKET_NAME is set (length: ${#S3_BUCKET_NAME})"
+          fi
         env:
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync frontend/dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
