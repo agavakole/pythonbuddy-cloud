@@ -114,8 +114,6 @@ def run_code():
             "error": "Running code too much within a short time period. Please wait a few seconds before clicking 'Run' each time."
         }), 200  # Note: returning 200 for backward compatibility with tests
 
-    session['time_now'] = datetime.now()
-
     # Write code to temp file
     if 'file_name' not in session or not session['file_name']:
         with tempfile.NamedTemporaryFile(delete=False, suffix='.py') as temp:
@@ -137,19 +135,31 @@ def run_code():
 
 
 def slow():
-    """Rate limiting check"""
-    if 'count' not in session:
-        session['count'] = 0
-    if 'time_now' not in session:
-        session['time_now'] = datetime.now()
+    """Rate limiting check with sliding window"""
+    current_time = datetime.now()
     
-    session['count'] += 1
-    time = datetime.now() - session['time_now']
-    
-    if time.total_seconds() == 0:
+    # Initialize session variables if they don't exist
+    if 'last_request_time' not in session:
+        session['last_request_time'] = current_time
+        session['request_count'] = 1
         return False
-    if float(session['count']) / float(time.total_seconds()) > 5:
+    
+    # Calculate time since last request
+    time_diff = (current_time - session['last_request_time']).total_seconds()
+    
+    # Reset counter if more than 10 seconds have passed
+    if time_diff > 10:
+        session['last_request_time'] = current_time
+        session['request_count'] = 1
+        return False
+    
+    # Check if too many requests in the time window
+    session['request_count'] += 1
+    
+    # Allow max 3 requests per 10 seconds
+    if session['request_count'] > 3:
         return True
+    
     return False
 
 
