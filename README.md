@@ -33,6 +33,10 @@ Deployed using a **highly available, self-healing AWS infrastructure**:
 
 ### Architecture Diagram
 
+![PythonBuddy Cloud Architecture](architectute-cloud.png)
+
+**Architecture Components:**
+
 ```
 ┌─────────────────┐
 │  User Browser   │
@@ -106,7 +110,7 @@ This mirrors production patterns used by Netflix, Spotify, and Airbnb.
 
 ---
 
-##  CI/CD Pipeline
+## 🚀 CI/CD Pipeline
 
 Fully automated deployment with **GitHub Actions**:
 
@@ -119,7 +123,7 @@ Zero manual intervention required.
 
 ---
 
-##  Tech Stack
+## 🛠️ Tech Stack
 
 ### Frontend
 - ![React](https://img.shields.io/badge/-React-61DAFB?logo=react&logoColor=white) React (Vite)
@@ -138,7 +142,7 @@ Zero manual intervention required.
 
 ---
 
-##  Local Development
+## 💻 Local Development
 
 ### Backend
 ```bash
@@ -201,7 +205,7 @@ Semester project focusing on:
 
 ---
 
-##  Credits
+## 👏 Credits
 
 - **Original PythonBuddy**: [Ethan Chiu](https://github.com/ethanchewy)
 - **Cloud Architecture & Deployment**: Kole Agava
