@@ -141,6 +141,10 @@ The architecture is designed for **high availability** and **automatic recovery*
 
 ## Self-Healing Demonstration
 
+
+
+https://github.com/user-attachments/assets/bc31521f-6cbf-4718-a684-6f2f97b9f688
+
 **Live reliability test:**
 
 1. Terminate a backend EC2 instance
