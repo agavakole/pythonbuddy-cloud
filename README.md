@@ -1,4 +1,5 @@
-# PythonBuddy ☁️🐍  
+# PythonBuddy ☁️🐍
+
 **Cloud-Deployed Python Linter & Code Execution Platform**
 
 [![AWS](https://img.shields.io/badge/AWS-Cloud-orange?logo=amazon-aws)](https://aws.amazon.com)
@@ -11,7 +12,8 @@
 ## Overview
 
 **PythonBuddy** is an online Python 3 linter and code execution environment featuring:
-- ✅ Live Pylint syntax checking  
+
+- ✅ Live Pylint syntax checking
 - ✅ Python code execution in the browser
 - ✅ Real-time error feedback and explanations
 
@@ -23,17 +25,17 @@
 
 Deployed using a **highly available, self-healing AWS infrastructure**:
 
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| **Frontend** | React + S3 | Static website hosting |
-| **Backend** | Flask + Docker + EC2 | API and code execution |
-| **Load Balancer** | Application Load Balancer | Traffic distribution |
-| **Scaling** | Auto Scaling Group | Automatic instance management |
-| **Network** | VPC (Public/Private Subnets) | Secure isolation |
+| Component         | Technology                   | Purpose                       |
+| ----------------- | ---------------------------- | ----------------------------- |
+| **Frontend**      | React + S3                   | Static website hosting        |
+| **Backend**       | Flask + Docker + EC2         | API and code execution        |
+| **Load Balancer** | Application Load Balancer    | Traffic distribution          |
+| **Scaling**       | Auto Scaling Group           | Automatic instance management |
+| **Network**       | VPC (Public/Private Subnets) | Secure isolation              |
 
 ### Architecture Diagram
 
-![PythonBuddy Cloud Architecture](architectute-cloud.png)
+![PythonBuddy Cloud Architecture](/architecture-cloud.png)
 
 **Architecture Components:**
 
@@ -74,24 +76,29 @@ Deployed using a **highly available, self-healing AWS infrastructure**:
 ### Key Architecture Features
 
 **Frontend**
+
 - React (Vite) hosted on S3 Static Website Hosting
 - Direct asset delivery to users
 
 **Backend**
+
 - Flask API in Docker containers
 - EC2 instances in **private subnets** (no direct internet access)
 - Health check endpoint: `/api/health`
 
 **Load Balancing**
+
 - ALB routes traffic to healthy instances only
 - Health checks every 30 seconds
 
 **Auto Scaling & Self-Healing**
+
 - Desired capacity: 2 instances (Min: 1, Max: 4)
 - Automatic replacement of failed instances
 - Zero-downtime during failures
 
 **Security**
+
 - Private subnets for backend
 - Security groups: ALB accepts HTTP from internet, EC2 only from ALB
 
@@ -100,6 +107,7 @@ Deployed using a **highly available, self-healing AWS infrastructure**:
 ## Self-Healing Demonstration
 
 **Live reliability test:**
+
 1. Terminate a backend EC2 instance
 2. Auto Scaling detects failure (< 30s)
 3. New instance launches automatically
@@ -126,16 +134,19 @@ Zero manual intervention required.
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - ![React](https://img.shields.io/badge/-React-61DAFB?logo=react&logoColor=white) React (Vite)
 - ![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?logo=typescript&logoColor=white) TypeScript
 - CodeMirror, Axios
 
 ### Backend
+
 - ![Python](https://img.shields.io/badge/-Python-3776AB?logo=python&logoColor=white) Python 3.9 + Flask
 - ![Docker](https://img.shields.io/badge/-Docker-2496ED?logo=docker&logoColor=white) Docker
 - Pylint
 
 ### Cloud & DevOps
+
 - ![AWS](https://img.shields.io/badge/-AWS-FF9900?logo=amazon-aws&logoColor=white) S3, EC2, ALB, Auto Scaling, VPC
 - ![GitHub Actions](https://img.shields.io/badge/-GitHub%20Actions-2088FF?logo=github-actions&logoColor=white) GitHub Actions
 - ![Docker Hub](https://img.shields.io/badge/-Docker%20Hub-2496ED?logo=docker&logoColor=white) Docker Hub
@@ -145,6 +156,7 @@ Zero manual intervention required.
 ## 💻 Local Development
 
 ### Backend
+
 ```bash
 git clone https://github.com/agavakole/pythonbuddy-cloud.git
 cd pythonbuddy-cloud
@@ -156,6 +168,7 @@ python -m PythonBuddy.app
 ```
 
 ### Frontend
+
 ```bash
 cd frontend
 pnpm install
@@ -165,6 +178,7 @@ pnpm dev
 ```
 
 ### Docker
+
 ```bash
 cd backend
 docker build -t pythonbuddy-backend .
@@ -188,8 +202,9 @@ curl http://localhost:5000/api/health
 ## Academic Context
 
 Semester project focusing on:
+
 - Cloud architecture design
-- High availability systems  
+- High availability systems
 - Infrastructure automation
 - Security best practices
 
