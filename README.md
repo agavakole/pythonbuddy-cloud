@@ -35,7 +35,7 @@ Deployed using a **highly available, self-healing AWS infrastructure**:
 
 ### Architecture Diagram
 
-![PythonBuddy Cloud Architecture](./images/architectute-cloud.png)
+![PythonBuddy Cloud Architecture](./images/architecture-cloud.png)
 
 **Architecture Components:**
 
