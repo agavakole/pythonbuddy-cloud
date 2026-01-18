@@ -37,6 +37,41 @@ Deployed using a **highly available, self-healing AWS infrastructure**:
 
 ![PythonBuddy Cloud Architecture](./images/architecture-cloud.png)
 
+**How It Works:**
+
+The architecture is designed for **high availability** and **automatic recovery**. Here's the traffic flow:
+
+1. **User Request** → User opens PythonBuddy in their browser and makes an HTTP request on port 80
+
+2. **Application Load Balancer (ALB)** → Routes incoming traffic to healthy backend instances
+   - Listens on port 80 (HTTP)
+   - Forwards requests to EC2 instances on port 5000
+   - Performs health checks every 30 seconds via `/api/health`
+   - Only sends traffic to instances that pass health checks
+
+3. **Auto Scaling Group** → Manages backend EC2 instances in private subnets
+   - Maintains 2 running instances (Min: 1, Max: 4)
+   - Launches new instances if one fails
+   - Uses Launch Template with User Data for automatic Docker deployment
+
+4. **EC2 Instances (Private)** → Run Dockerized Flask backend
+   - Located in private subnets (no direct internet access)
+   - Pull Docker images from Docker Hub via NAT Gateway
+   - Execute Python code and run Pylint checks
+   - Health endpoint responds with HTTP 200 when healthy
+
+5. **Supporting Infrastructure:**
+   - **VPC (10.0.0.0/16)**: Isolated network environment
+   - **Public Subnets**: Host ALB and NAT Gateway
+   - **Private Subnets (AZ-a & AZ-b)**: Host EC2 instances across multiple availability zones
+   - **NAT Gateway**: Provides internet access for private instances (outbound only)
+   - **Internet Gateway**: Connects VPC to the internet
+   - **Security Groups**:
+     - ALB accepts HTTP from anywhere (0.0.0.0/0)
+     - EC2 instances only accept traffic from ALB on port 5000
+   - **IAM Role**: Grants EC2 instances permissions for CloudWatch and Systems Manager
+   - **AWS Systems Manager**: Enables remote management without SSH
+
 **Architecture Components:**
 
 ```
@@ -114,11 +149,9 @@ Deployed using a **highly available, self-healing AWS infrastructure**:
 4. Load Balancer routes only to healthy targets
 5. **Zero user-visible downtime**
 
-This mirrors production patterns used by Netflix, Spotify, and Airbnb.
-
 ---
 
-## 🚀 CI/CD Pipeline
+## CI/CD Pipeline
 
 Fully automated deployment with **GitHub Actions**:
 
@@ -131,7 +164,7 @@ Zero manual intervention required.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 
@@ -153,7 +186,7 @@ Zero manual intervention required.
 
 ---
 
-## 💻 Local Development
+## Local Development
 
 ### Backend
 
@@ -220,7 +253,7 @@ Semester project focusing on:
 
 ---
 
-## 👏 Credits
+## Credits
 
 - **Original PythonBuddy**: [Ethan Chiu](https://github.com/ethanchewy)
 - **Cloud Architecture & Deployment**: Kole Agava
@@ -230,12 +263,6 @@ Semester project focusing on:
 ## 📄 License
 
 Educational purposes. Original PythonBuddy by Ethan Chiu.
-
----
-
-## ⭐ Star This Repo!
-
-If this project helped you, consider giving it a star!
 
 ---
 
